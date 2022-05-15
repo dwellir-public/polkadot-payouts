@@ -4,6 +4,7 @@ import { Config } from '@w3f/config';
 
 import { Accountant } from '../accountant';
 import { InputConfig } from '../types';
+import { testSlack } from '../slack';
 
 
 export async function startAction(cmd): Promise<void> {
@@ -17,6 +18,7 @@ export async function startAction(cmd): Promise<void> {
 
     try {
         await accountant.run();
+        await testSlack(logger);
         process.exit(0);
     } catch (e) {
         logger.error(`During accountant run: ${e.toString()}`);
