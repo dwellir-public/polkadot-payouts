@@ -135,17 +135,22 @@ export class Accountant {
     private async processClaimsCheckOnly(): Promise<void> {
       for (let i = 0; i < this.claimsCheckOnly.length; i++) {
         this.logger.info(`Processing checkOnlyClaim ${i} for ${this.claimsCheckOnly[i].alias}`);
-        await this.processClaimCheckOnly(this.claimsCheckOnly[i]);
+        const unclaimedPayouts: number[] = await this.processClaimCheckOnly(this.claimsCheckOnly[i]);
+        for (let i = 0; i < unclaimedPayouts.length; i++) {
+          this.logger.info("Unclaimed: " + unclaimedPayouts[i].toString());
+        }
       }
     }
 
-    private async processClaimCheckOnly(target: Target): Promise<void> {
+    private async processClaimCheckOnly(target: Target): Promise<number[]> {
+      let unclaimedPayouts: number[] = [];
       await this.handleConnectionRetries(
         async () => {
-          await this.client.checkOnly(target.validatorAddress)
+          unclaimedPayouts = await this.client.checkOnly(target.validatorAddress);
         },
         target.validatorAddress
       )
+      return unclaimedPayouts;
     }
 
     private async processTransfers(): Promise<void> {
