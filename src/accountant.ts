@@ -13,6 +13,7 @@ import {
     ApiClient, AccountantInputConfig, ClaimThirdParty, Target, GracePeriod, RetryPolicy
 } from './types';
 import { delay, getErrorMessage } from './utils';
+import { Slack } from './slack';
 
 export class Accountant {
     private minimumSenderBalance: Balance;
@@ -27,6 +28,7 @@ export class Accountant {
     constructor(
         cfg: AccountantInputConfig,
         private readonly client: ApiClient,
+        private readonly slack: Slack,
         private readonly logger: Logger) {
         this.minimumSenderBalance = new BN(cfg.minimumSenderBalance) as Balance
         if(cfg.transactions) this.transactions = cfg.transactions
@@ -133,11 +135,14 @@ export class Accountant {
     }
     
     private async processClaimsCheckOnly(): Promise<void> {
-      for (let i = 0; i < this.claimsCheckOnly.length; i++) {
-        this.logger.info(`Processing checkOnlyClaim ${i} for ${this.claimsCheckOnly[i].alias}`);
-        const unclaimedPayouts: number[] = await this.processClaimCheckOnly(this.claimsCheckOnly[i]);
-        for (let i = 0; i < unclaimedPayouts.length; i++) {
-          this.logger.info("Unclaimed: " + unclaimedPayouts[i].toString());
+      for (let validatorIndex = 0; validatorIndex < this.claimsCheckOnly.length; validatorIndex++) {
+        this.logger.info(`Processing checkOnlyClaim ${validatorIndex} for ${this.claimsCheckOnly[validatorIndex].alias}`);
+        const unclaimedPayouts: number[] = await this.processClaimCheckOnly(this.claimsCheckOnly[validatorIndex]);
+        for (let payoutIndex = 0; payoutIndex < unclaimedPayouts.length; payoutIndex++) {
+          this.logger.info("Unclaimed: " + unclaimedPayouts[payoutIndex].toString());
+          if (this.claimsCheckOnly[validatorIndex].slackChannelId) {
+            await this.slack.testSlack(this.claimsCheckOnly[validatorIndex].slackChannelId, "Unclaimed: " + unclaimedPayouts[payoutIndex].toString());
+          }
         }
       }
     }

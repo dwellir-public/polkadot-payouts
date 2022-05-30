@@ -49,6 +49,7 @@ export interface ParallelExecution {
 export interface Target {
   alias: string;
   validatorAddress: string;
+  slackChannelId: string;
 }
 
 
@@ -71,6 +72,7 @@ export interface RetryPolicy {
 export interface InputConfig extends AccountantInputConfig {
   wsEndpoint: string;
   logLevel: string;
+  slackToken: string;
 }
 
 export interface GracePeriod {
